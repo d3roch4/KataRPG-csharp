@@ -1,0 +1,45 @@
+﻿@page "/factions"
+@inject KataRPG.WebApp.Services.FactionsService Service
+
+<PageTitle>Factions</PageTitle>
+
+<h1>Factions</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Id</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var faction in Service.List())
+        {
+            <tr>
+                <td><input value="@faction.Name" @onchange="@((ChangeEventArgs __e) => setName(faction, __e.Value.ToString()))"></td>
+                <td>@faction.Id</td>
+                <td><button class="btn btn-primary" @onclick="@(() => remove(faction))">X</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-primary" @onclick="addFaction">Add Faction</button>
+
+@code {
+    private void addFaction()
+    {
+        Service.Add("New Faction");
+    }
+    
+    private void remove(KataRPG.Domain.Faction faction)
+    {
+        Service.Del(faction);
+    }
+
+    private void setName(KataRPG.Domain.Faction faction, string name)
+    {
+        Console.WriteLine(name);
+        faction.Name = name;
+    }
+}

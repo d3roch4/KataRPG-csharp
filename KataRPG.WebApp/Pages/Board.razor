@@ -1,0 +1,153 @@
+﻿@page "/board"
+@using Domain
+@inject KataRPG.WebApp.Services.FactionsService factions
+@inject KataRPG.WebApp.Services.CharactersService characters
+@inject KataRPG.WebApp.Services.ThingsService things
+
+<PageTitle>Board</PageTitle>
+<h1>Board</h1>
+<p>This component demonstrates the battle board.</p>
+
+Characters:
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th>Type</th>
+            <th>Level</th>
+            <th>Alive</th>
+            <th>Health</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var character in characters.List())
+        {
+            <tr>
+                <td><input value="@character.Name" @onchange="@((ChangeEventArgs __e) => setName(character, __e.Value.ToString()))"></td>
+                <td>@foreach (var fac in factions.List())
+                {
+                    @if(character.Factions.Contains(fac)){
+                        <input type="checkbox" id="@fac.Id.ToString()+@character.Id" @onchange=@((e)=> changeFaction(e, fac, character)) checked>
+                    }else{
+                        <input type="checkbox" id="@fac.Id.ToString()+@character.Id" @onchange=@((e)=> changeFaction(e, fac, character)) unchecked>
+                    }
+                    <label for="@fac.Id.ToString()+@character.Id">@fac.Name</label>
+                }</td>
+                <td><select @onchange="@((ChangeEventArgs __e) => attack(character, __e))">
+                    <option>Damage</option>
+                    <optgroup label="Characters">
+                        @foreach (var c in characters.List().Where(c=>c.Id != character.Id)){
+                            <option value=@c.Id>@c.Name</option>
+                        }
+                    </optgroup>
+                    <optgroup label="Things">
+                        @foreach (var t in things.List()){
+                            <option value=@t.Id>@t.Name</option>
+                        }
+                    </optgroup>
+                </select></td>
+                <td><select @onchange="@((ChangeEventArgs __e) => heal(character, __e))">
+                    <option>Heal</option>
+                    <optgroup label="Characters">
+                        @foreach (var c in characters.List().Where(c=>c.Id == character.Id || c.Factions.Any(f=> character.Factions.Contains(f)))){
+                            <option value=@c.Id>@c.Name</option>
+                        }
+                    </optgroup>
+                </select></td>
+                <td>@character.Type</td>
+                <td>@character.Level</td>
+                <td>@character.Alive</td>
+                <td>@character.Health</td>  
+            </tr>
+        }
+    </tbody>
+</table>
+
+Things:
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Health</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var thing in things.List().Where(t=> !t.Destroyed))
+        {
+            <tr>
+                <td><input value="@thing.Name" @onchange="@((ChangeEventArgs __e) => setName(thing, __e.Value.ToString()))"></td>
+                <td>@thing.Health</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+Destroyed:
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Id</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var thing in things.List().Concat(characters.List()).Where(e=> e.Destroyed))  
+        {
+            <tr>
+                <td><input value="@thing.Name"></td>
+                <td>@thing.Id</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {  //use @code in razor components.
+    void attack(Character character, ChangeEventArgs e)
+    {
+        var id = e.Value.ToString();
+        Thing? thing = characters.Find(id);
+        if(thing == null)
+            thing = things.Find(id);
+        if(thing == null)
+            return;
+
+        character.Damage(thing, 2); //new Random().Next() % 25);
+        e.Value = null; // dont work
+    }
+    void heal(Character character, ChangeEventArgs e)
+    {
+        var id = e.Value.ToString();
+        Character? other = characters.Find(id);
+        if(other == null)
+            return;
+
+        character.Heal(other); //new Random().Next() % 25);
+        e.Value = null; // dont work
+    }
+}
+
+@code {
+    
+    void changeFaction(ChangeEventArgs e, Faction fac, Character character)
+    {
+        Console.WriteLine("Character in: ");
+        if(((bool)e.Value) == true)
+            character.Factions.Add(fac);
+        else
+            character.Factions.Remove(fac);
+        
+    }
+
+    private void addCharacter()
+    {
+        characters.Add("New Faction");
+    }
+
+    private void setName(KataRPG.Domain.Thing thing, string name)
+    {
+        thing.Name = name;
+    }
+}
